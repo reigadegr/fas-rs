@@ -27,7 +27,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup ndk
         run: |
-          ndk_url=$(wget -qO- https://github.com/android/ndk/releases/latest | grep -e 'https://dl.google.com/android/repository/android-ndk-.*-linux.zip' | sed -n 's/.*<a href="\([^"]*\)".*/\1/p')
+          # ndk_url=$(wget -qO- https://github.com/android/ndk/releases/latest | grep -e 'https://dl.google.com/android/repository/android-ndk-.*-linux.zip' | sed -n 's/.*<a href="\([^"]*\)".*/\1/p')
+          ndk_url=$(wget -qO- https://github.com/android/ndk/releases | grep -e 'https://dl.google.com/android/repository/android-ndk-.*-linux.zip' | awk 'NR==1' | cut -d '"' -f2)
           wget -O ndk.zip $ndk_url -nv
           mkdir ~/ndk_temp
           unzip ndk.zip -d ~/ndk_temp 2>&1 > /dev/null

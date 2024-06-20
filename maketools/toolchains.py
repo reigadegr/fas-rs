@@ -87,7 +87,7 @@ class CargoNightly:
             prefix = os.getenv("PREFIX")
             self.__cargo = Path(prefix).joinpath("opt/rust-nightly/bin/cargo")
         elif shutil.which("cargo-ndk") is not None:
-            self.__cargo = "cargo +nightly ndk -p 31 -t arm64-v8a"
+            self.__cargo = "cargo +nightly ndk -p 34 -t arm64-v8a"
         else:
             raise Exception("Install cargo-ndk first")
 
@@ -192,9 +192,9 @@ class Buildtools:
                 case _:
                     raise Exception("Unsupported platform: {} {}".format(arch, system))
 
-            self.__cargo = "cargo ndk -p 31 -t arm64-v8a"
+            self.__cargo = "cargo ndk -p 34 -t arm64-v8a"
             self.__strip = bins.joinpath("llvm-strip")
-            self.__clang_plusplus = bins.joinpath("aarch64-linux-android31-clang++")
+            self.__clang_plusplus = bins.joinpath("aarch64-linux-android34-clang++")
             self.__clang_format = "clang-format"
             self.__clang_tidy = bins.joinpath("clang-tidy")
 
