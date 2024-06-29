@@ -36,7 +36,7 @@ jobs:
       - name: Setup rust toolchains
         run: |
           rustup default nightly
-          rustup target add aarch64-linux-android
+          rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
           rustup component add rust-src
       - name: Install cargo ndk
         run: cargo install cargo-ndk
