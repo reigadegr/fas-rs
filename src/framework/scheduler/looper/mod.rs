@@ -43,7 +43,7 @@ use crate::{
     Controller,
 };
 
-use buffer::Buffer;
+use buffer::{Buffer, BufferState};
 use clean::Cleaner;
 
 pub type Producer = i32; // pid
@@ -129,8 +129,12 @@ impl Looper {
             }
 
             if let Some(data) = fas_data {
-                self.buffer_update(&data);
-                self.do_policy(target_fps);
+                if let Some(state) = self.buffer_update(&data) {
+                    match state {
+                        BufferState::Usable => self.do_policy(target_fps),
+                        BufferState::Unusable => self.disable_fas(),
+                    }
+                }
             }
         }
     }
@@ -146,7 +150,7 @@ impl Looper {
                 self.mode = new_mode;
 
                 if self.state == State::Working {
-                    self.controller.init_game(&self.extension);
+                    self.controller.init_game(&self.config, &self.extension);
                 }
             }
         }
@@ -208,6 +212,6 @@ impl Looper {
         let target_fps = target_fps.unwrap_or(120);
 
         let factor = Controller::scale_factor(target_fps, event.frame, event.target);
-        self.controller.fas_update_freq(factor);
+        self.controller.fas_update_freq(factor, &self.config);
     }
 }

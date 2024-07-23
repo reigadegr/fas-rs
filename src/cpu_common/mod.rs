@@ -25,7 +25,7 @@ use file_handler::FileHandler;
 use log::debug;
 use log::error;
 
-use crate::{api::ApiV0, Extension};
+use crate::{api::ApiV0, framework::Config, Extension};
 
 const BASE_FREQ: isize = 700_000;
 
@@ -80,13 +80,12 @@ impl Controller {
         })
     }
 
-    pub fn init_game(&mut self, extension: &Extension) {
+    pub fn init_game(&mut self, config: &Config, extension: &Extension) {
         self.policy_freq = self.max_freq;
         extension.tigger_extentions(ApiV0::InitCpuFreq);
 
-        // self.walt_extra(self.max_freq);
         for cpu in &self.cpu_infos {
-            cpu.write_freq(self.max_freq, &mut self.file_handler)
+            cpu.write_freq(self.max_freq, &mut self.file_handler, config)
                 .unwrap_or_else(|e| error!("{e:?}"));
         }
     }
@@ -95,22 +94,20 @@ impl Controller {
         self.policy_freq = self.max_freq;
         extension.tigger_extentions(ApiV0::ResetCpuFreq);
 
-        // self.walt_extra(self.max_freq);
         for cpu in &self.cpu_infos {
             cpu.reset_freq(&mut self.file_handler)
                 .unwrap_or_else(|e| error!("{e:?}"));
         }
     }
 
-    pub fn fas_update_freq(&mut self, factor: f64) {
+    pub fn fas_update_freq(&mut self, factor: f64, config: &Config) {
         self.policy_freq = self
             .policy_freq
             .saturating_add((BASE_FREQ as f64 * factor) as isize)
             .clamp(self.min_freq, self.max_freq);
 
-        // self.walt_extra(self.policy_freq);
         for cpu in &self.cpu_infos {
-            cpu.write_freq(self.policy_freq, &mut self.file_handler)
+            cpu.write_freq(self.policy_freq, &mut self.file_handler, config)
                 .unwrap_or_else(|e| error!("{e:?}"));
         }
     }

@@ -43,8 +43,8 @@ fn mount_bind(src_path: &str, dest_path: &str) {
         umount2(dest_path.as_ptr(), libc::MNT_DETACH);
 
         mount(
-            src_path.as_ptr().cast::<u8>(),
-            dest_path.as_ptr().cast::<u8>(),
+            src_path.as_ptr().cast(),
+            dest_path.as_ptr().cast(),
             ptr::null(),
             MS_BIND | MS_REC,
             ptr::null(),
@@ -93,7 +93,14 @@ impl Cleaner {
             "0"
         );
 
-        lock_values!(self.map, ("/sys/module/migt/parameters/glk_disable"), "1");
+        lock_values!(
+            self.map,
+            (
+                "/sys/module/migt/parameters/glk_disable",
+                "/proc/game_opt/disable_cpufreq_limit"
+            ),
+            "1"
+        );
     }
 
     pub fn undo_cleanup(&self) {
