@@ -1,6 +1,6 @@
 {
-  "versionCode": 290,
-  "version": "v2.9.0",
-  "zipUrl": "https://github.com/shadow3aaa/fas-rs/releases/download/v2.9.0/fas-rs-zygisk.zip",
+  "versionCode": 301,
+  "version": "v3.0.1",
+  "zipUrl": "https://github.com/shadow3aaa/fas-rs/releases/download/v3.0.1/fas-rs-zygisk.zip",
   "changelog": "https://github.com/shadow3aaa/fas-rs/raw/master/update/en-US/changelog.md"
 }

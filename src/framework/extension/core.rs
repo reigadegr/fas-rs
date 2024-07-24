@@ -18,7 +18,10 @@ use inotify::{Inotify, WatchMask};
 use log::{debug, error, info};
 use mlua::Lua;
 
-use super::{api::Api, EXTENSIONS_PATH};
+use super::{
+    api::{v1, Api},
+    EXTENSIONS_PATH,
+};
 use crate::framework::error::Result;
 
 pub type ExtensionMap = HashMap<PathBuf, Lua>;
@@ -81,6 +84,15 @@ fn load_extensions() -> Result<ExtensionMap> {
             "log_error",
             lua.create_function(|_, message: String| {
                 error!("extension: {message}");
+                Ok(())
+            })?,
+        )?;
+
+        // Add in api v1
+        lua.globals().set(
+            "set_policy_freq_offset",
+            lua.create_function(|_, (policy, offset): (i32, isize)| {
+                v1::set_policy_freq_offset(policy, offset)?;
                 Ok(())
             })?,
         )?;
