@@ -16,13 +16,12 @@ use std::{fs, path::PathBuf, sync::atomic::Ordering};
 
 use anyhow::Result;
 
-use crate::framework::Config;
-
 use super::{file_handler::FileHandler, OFFSET_MAP};
 
 #[derive(Debug)]
 pub struct Info {
     pub policy: i32,
+    pub cpus: Vec<i32>,
     path: PathBuf,
     pub freqs: Vec<isize>,
 }
@@ -30,6 +29,11 @@ pub struct Info {
 impl Info {
     pub fn new(path: PathBuf) -> Result<Self> {
         let policy = path.file_name().unwrap().to_str().unwrap()[6..].parse()?;
+
+        let cpus: Vec<i32> = fs::read_to_string(path.join("affected_cpus"))?
+            .split_whitespace()
+            .map(|c| c.parse::<i32>().unwrap())
+            .collect();
 
         let mut freqs: Vec<_> = fs::read_to_string(path.join("scaling_available_frequencies"))?
             .split_whitespace()
@@ -40,6 +44,7 @@ impl Info {
 
         Ok(Self {
             policy,
+            cpus,
             path,
             freqs,
         })
@@ -49,23 +54,31 @@ impl Info {
         &self,
         freq: isize,
         file_handler: &mut FileHandler,
-        config: &Config,
+        controll_min_freq: bool,
     ) -> Result<()> {
-        let freq = freq.saturating_add(
-            OFFSET_MAP
-                .get()
-                .unwrap()
-                .get(&self.policy)
-                .unwrap()
-                .load(Ordering::Acquire),
-        );
+        let freq = freq
+            .saturating_add(
+                OFFSET_MAP
+                    .get()
+                    .unwrap()
+                    .get(&self.policy)
+                    .unwrap()
+                    .load(Ordering::Acquire),
+            )
+            .clamp(
+                self.freqs.first().copied().unwrap(),
+                self.freqs.last().copied().unwrap(),
+            );
         let freq = freq.to_string();
         let max_freq_path = self.max_freq_path();
         file_handler.write_with_workround(max_freq_path, &freq)?;
 
-        if self.policy != 0 && config.config().control_min_freq {
-            let min_freq_path = self.min_freq_path();
+        let min_freq_path = self.min_freq_path();
+        if self.policy != 0 && controll_min_freq {
             file_handler.write_with_workround(min_freq_path, &freq)?;
+        } else {
+            file_handler
+                .write_with_workround(min_freq_path, self.freqs.first().unwrap().to_string())?;
         }
 
         Ok(())

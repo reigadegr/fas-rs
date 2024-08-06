@@ -13,9 +13,11 @@
 // limitations under the License.
 
 mod cpu_info;
+mod cpu_usage;
 mod file_handler;
 
 use std::{
+    cmp,
     collections::HashMap,
     fs,
     sync::{atomic::AtomicIsize, OnceLock},
@@ -23,8 +25,8 @@ use std::{
 };
 
 use anyhow::Result;
-
 use cpu_info::Info;
+use cpu_usage::UsageReader;
 use file_handler::FileHandler;
 #[cfg(debug_assertions)]
 use log::debug;
@@ -32,11 +34,10 @@ use log::error;
 
 use crate::{
     api::{v1::ApiV1, ApiV0},
-    framework::Config,
     Extension,
 };
 
-const BASE_FREQ: isize = 600_000;
+const BASE_FREQ: isize = 500_000;
 
 pub static OFFSET_MAP: OnceLock<HashMap<i32, AtomicIsize>> = OnceLock::new();
 
@@ -47,10 +48,12 @@ pub struct Controller {
     policy_freq: isize,
     cpu_infos: Vec<Info>,
     file_handler: FileHandler,
+    usage_reader: UsageReader,
 }
 
 impl Controller {
     pub fn new() -> Result<Self> {
+        let usage_reader = UsageReader::new();
         let cpu_infos: Vec<_> = fs::read_dir("/sys/devices/system/cpu/cpufreq")?
             .map(|entry| entry.unwrap().path())
             .filter(|path| {
@@ -95,16 +98,17 @@ impl Controller {
             policy_freq: max_freq,
             cpu_infos,
             file_handler: FileHandler::new(),
+            usage_reader,
         })
     }
 
-    pub fn init_game(&mut self, config: &Config, extension: &Extension) {
+    pub fn init_game(&mut self, extension: &Extension) {
         self.policy_freq = self.max_freq;
         extension.tigger_extentions(ApiV0::InitCpuFreq);
         extension.tigger_extentions(ApiV1::InitCpuFreq);
 
         for cpu in &self.cpu_infos {
-            cpu.write_freq(self.max_freq, &mut self.file_handler, config)
+            cpu.write_freq(self.max_freq, &mut self.file_handler, false)
                 .unwrap_or_else(|e| error!("{e:?}"));
         }
     }
@@ -120,14 +124,35 @@ impl Controller {
         }
     }
 
-    pub fn fas_update_freq(&mut self, factor: f64, config: &Config) {
+    pub fn fas_update_freq(&mut self, factor: f64) {
         self.policy_freq = self
             .policy_freq
             .saturating_add((BASE_FREQ as f64 * factor) as isize)
             .clamp(self.min_freq, self.max_freq);
 
-        for cpu in &self.cpu_infos {
-            cpu.write_freq(self.policy_freq, &mut self.file_handler, config)
+        #[cfg(debug_assertions)]
+        {
+            debug!("change freq: {}", (BASE_FREQ as f64 * factor) as isize);
+            debug!("policy freq: {}", self.policy_freq);
+        }
+
+        let heaviest_cpu = self
+            .usage_reader
+            .update()
+            .iter()
+            .max_by(|(_, usage_a), (_, usage_b)| {
+                usage_a.partial_cmp(usage_b).unwrap_or(cmp::Ordering::Equal)
+            })
+            .map(|(cpu, _)| cpu)
+            .copied();
+
+        for policy in &self.cpu_infos {
+            policy
+                .write_freq(
+                    self.policy_freq,
+                    &mut self.file_handler,
+                    heaviest_cpu.is_some_and(|core| policy.cpus.contains(&core)),
+                )
                 .unwrap_or_else(|e| error!("{e:?}"));
         }
     }
