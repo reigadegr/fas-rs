@@ -61,6 +61,6 @@ opt-level = 3
 strip = true
 debug = 0
 debug-assertions = false
-panic = "abort"
+# panic = "abort"
 incremental = false
 
