@@ -29,7 +29,6 @@ impl Looper {
     pub fn retain_topapp(&mut self) {
         if let Some(buffer) = self.buffer.as_ref() {
             if !self.windows_watcher.topapp_pids().contains(&buffer.pid) {
-                self.affinity.detach();
                 let _ = self.analyzer.detach_app(buffer.pid);
                 let pkg = buffer.pkg.clone();
                 self.extension
@@ -55,7 +54,6 @@ impl Looper {
                 self.state = State::NotWorking;
                 self.cleaner.undo_cleanup();
                 self.controller.init_default(&self.extension);
-                self.affinity.detach();
                 self.extension.tigger_extentions(ApiV0::StopFas);
                 self.extension.tigger_extentions(ApiV1::StopFas);
                 self.extension.tigger_extentions(ApiV2::StopFas);
@@ -101,8 +99,6 @@ impl Looper {
                 return None;
             };
             let target_fps = self.config.target_fps(&pkg)?;
-
-            self.affinity.attach(pid);
 
             info!("New fas buffer on: [{pkg}]");
 

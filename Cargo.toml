@@ -14,7 +14,7 @@
 
 [package]
 name = "fas-rs"
-version = "3.3.0"
+version = "3.4.0"
 edition = "2021"
 description = "Frame aware scheduling for android. Requires kernel ebpf support."
 authors = ["shadow3"]
@@ -39,7 +39,6 @@ mlua = { version = "0.9.9", features = ["luajit", "vendored"] }
 frame-analyzer = "0.2.6"
 dumpsys-rs = { git = "https://github.com/shadow3aaa/dumpsys-rs" }
 mimalloc = "0.1.43"
-flower = { git = "https://github.com/shadow3aaa/flower" }
 num_cpus = "1.16.0"
 
 [build-dependencies]
