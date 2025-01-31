@@ -15,9 +15,15 @@
 // You should have received a copy of the GNU General Public License along
 // with fas-rs. If not, see <https://www.gnu.org/licenses/>.
 
-use std::{collections::HashMap, ffi::CString, fs::{self, set_permissions}, os::unix::fs::PermissionsExt, path::Path, ptr};
-
+use hashbrown::{hash_map::Entry, HashMap};
 use libc::{mount, umount, umount2, MS_BIND, MS_REC};
+use std::{
+    ffi::CString,
+    fs::{self, set_permissions},
+    os::unix::fs::PermissionsExt,
+    path::Path,
+    ptr,
+};
 
 use crate::framework::error::Result;
 
